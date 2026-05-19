@@ -27,6 +27,30 @@ type ClientSpec struct {
 	// +optional
 	// PodTemplate allows customization of the FRP client pod
 	PodTemplate *ClientSpec_PodTemplate `json:"podTemplate,omitempty"`
+	// +optional
+	// Workload selects how the FRP client is scheduled.
+	// Defaults to a single Pod for backwards compatibility. Set kind: DaemonSet
+	// to run one frpc per matching node — useful for HA when paired with
+	// Upstream.spec.tcp.loadBalancer.group, so frps round-robins traffic across
+	// the registered members.
+	Workload *ClientSpec_Workload `json:"workload,omitempty"`
+}
+
+// Workload kinds accepted by Client.spec.workload.kind.
+const (
+	WorkloadKindPod       = "Pod"
+	WorkloadKindDaemonSet = "DaemonSet"
+)
+
+// ClientSpec_Workload selects the Kubernetes workload kind that runs frpc.
+type ClientSpec_Workload struct {
+	// +kubebuilder:validation:Enum=Pod;DaemonSet
+	// +kubebuilder:default=Pod
+	// Kind is the workload object created for the FRP client. "Pod" creates a
+	// single bare Pod (default, preserves legacy behavior). "DaemonSet" creates
+	// a DaemonSet that runs one frpc per node matching podTemplate.nodeSelector
+	// / affinity / tolerations.
+	Kind string `json:"kind"`
 }
 
 type ClientSpec_Server struct {

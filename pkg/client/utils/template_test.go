@@ -9,9 +9,10 @@ import (
 
 // Test data structures that mirror models package
 type testConfig struct {
-	Common    testCommon
-	Upstreams []testUpstream
-	Visitors  []testVisitor
+	Common          testCommon
+	Upstreams       []testUpstream
+	Visitors        []testVisitor
+	ProxyNameSuffix string
 }
 
 type testTransportConfig struct {
@@ -347,6 +348,28 @@ func TestTemplateTCPUpstreamBasic(t *testing.T) {
 	assertContains(t, output, `localIP = "localhost"`)
 	assertContains(t, output, `localPort = 8080`)
 	assertContains(t, output, `remotePort = 9080`)
+}
+
+func TestTemplateProxyNameSuffix(t *testing.T) {
+	config := testConfig{
+		Common:          testCommon{ServerAddress: "example.com", ServerPort: 7000},
+		ProxyNameSuffix: "-{{ .Envs.POD_NAME }}",
+		Upstreams: []testUpstream{
+			{
+				Name: "tcp-service",
+				Type: 1,
+				TCP: testUpstreamTCP{
+					Host:       "localhost",
+					Port:       8080,
+					ServerPort: 9080,
+				},
+			},
+		},
+	}
+
+	output := renderTemplate(t, config)
+
+	assertContains(t, output, `name = "tcp-service-{{ .Envs.POD_NAME }}"`)
 }
 
 func TestTemplateTCPUpstreamWithProxyProtocol(t *testing.T) {

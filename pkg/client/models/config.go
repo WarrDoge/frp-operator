@@ -30,6 +30,15 @@ type Config struct {
 	Common    Common
 	Upstreams Upstreams
 	Visitors  Visitors
+
+	// ProxyNameSuffix is appended to every emitted `name = "<upstream>"` in the
+	// rendered config. Empty by default. The controller sets it to a runtime
+	// template expression (e.g. "-{{ .Envs.POD_NAME }}") when the client
+	// workload is a DaemonSet so each replica registers a unique proxy name
+	// while still sharing the same loadBalancer.group — without this, frps
+	// rejects replicas 2..N with "proxy [<name>] already exists" because
+	// pxyMgr.Add deduplicates by name before group membership is evaluated.
+	ProxyNameSuffix string
 }
 
 type TransportConfig struct {
