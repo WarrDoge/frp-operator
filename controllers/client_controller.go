@@ -149,6 +149,10 @@ func (r *ClientReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	config, err := models.NewConfig(r.Client, client, filteredUpstreams, filteredVisitors)
 	if err != nil {
+		r.setCondition(client, status.ConditionTypeReady, metav1.ConditionFalse, status.ReasonInvalidConfig, err.Error())
+		if statusErr := r.updateClientStatus(ctx, client, status.ClientPhaseFailed, err.Error(), len(filteredUpstreams), len(filteredVisitors)); statusErr != nil {
+			log.Error(statusErr, "failed to update client status")
+		}
 		return ctrl.Result{}, err
 	}
 

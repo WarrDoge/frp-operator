@@ -73,6 +73,7 @@ type testUpstreamTCPMUX struct {
 	Multiplexer   string
 	CustomDomains []string
 	Transport     *testTransport
+	LoadBalancer  *testLoadBalancerConfig
 }
 
 type testLoadBalancerConfig struct {
@@ -132,6 +133,7 @@ type testUpstreamHTTP struct {
 	HTTPPassword      string
 	HealthCheck       *testHTTPHealthCheck
 	Transport         *testTransport
+	LoadBalancer      *testLoadBalancerConfig
 }
 
 type testUpstreamHTTPS struct {
@@ -140,6 +142,7 @@ type testUpstreamHTTPS struct {
 	CustomDomains []string
 	ProxyProtocol *string
 	Transport     *testTransport
+	LoadBalancer  *testLoadBalancerConfig
 }
 
 type testHealthCheck struct {
@@ -1729,4 +1732,54 @@ func TestTemplateOIDCAuthWithoutOptionalFields(t *testing.T) {
 	assertContains(t, output, `auth.oidc.clientID = "my-client-id"`)
 	assertNotContains(t, output, `auth.oidc.audience`)
 	assertNotContains(t, output, `auth.oidc.scope`)
+}
+
+func TestTemplateHTTPUpstreamWithLoadBalancer(t *testing.T) {
+	config := testConfig{
+		Common: testCommon{ServerAddress: "frp.example.com", ServerPort: 7000, AdminAddress: "0.0.0.0", AdminPort: 7400, AdminUsername: "u", AdminPassword: "p"},
+		Upstreams: []testUpstream{{
+			Name: "http-lb", Type: 5,
+			HTTP: testUpstreamHTTP{
+				Host: "localhost", Port: 80,
+				LoadBalancer: &testLoadBalancerConfig{Group: "web", GroupKey: "shared"},
+			},
+		}},
+	}
+	output := renderTemplate(t, config)
+	assertContains(t, output, `type = "http"`)
+	assertContains(t, output, `loadBalancer.group = "web"`)
+	assertContains(t, output, `loadBalancer.groupKey = "shared"`)
+}
+
+func TestTemplateHTTPSUpstreamWithLoadBalancer(t *testing.T) {
+	config := testConfig{
+		Common: testCommon{ServerAddress: "frp.example.com", ServerPort: 7000, AdminAddress: "0.0.0.0", AdminPort: 7400, AdminUsername: "u", AdminPassword: "p"},
+		Upstreams: []testUpstream{{
+			Name: "https-lb", Type: 6,
+			HTTPS: testUpstreamHTTPS{
+				Host: "localhost", Port: 443,
+				LoadBalancer: &testLoadBalancerConfig{Group: "tls"},
+			},
+		}},
+	}
+	output := renderTemplate(t, config)
+	assertContains(t, output, `type = "https"`)
+	assertContains(t, output, `loadBalancer.group = "tls"`)
+	assertNotContains(t, output, `loadBalancer.groupKey`)
+}
+
+func TestTemplateTCPMUXUpstreamWithLoadBalancer(t *testing.T) {
+	config := testConfig{
+		Common: testCommon{ServerAddress: "frp.example.com", ServerPort: 7000, AdminAddress: "0.0.0.0", AdminPort: 7400, AdminUsername: "u", AdminPassword: "p"},
+		Upstreams: []testUpstream{{
+			Name: "mux-lb", Type: 7,
+			TCPMUX: testUpstreamTCPMUX{
+				Host: "localhost", Port: 1234, Multiplexer: "httpconnect",
+				LoadBalancer: &testLoadBalancerConfig{Group: "mux"},
+			},
+		}},
+	}
+	output := renderTemplate(t, config)
+	assertContains(t, output, `type = "tcpmux"`)
+	assertContains(t, output, `loadBalancer.group = "mux"`)
 }

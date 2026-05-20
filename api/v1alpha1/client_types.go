@@ -36,21 +36,23 @@ type ClientSpec struct {
 	Workload *ClientSpec_Workload `json:"workload,omitempty"`
 }
 
-// Workload kinds accepted by Client.spec.workload.kind.
+// WorkloadKind selects the Kubernetes workload that runs frpc.
+// +kubebuilder:validation:Enum=Pod;DaemonSet
+type WorkloadKind string
+
 const (
-	WorkloadKindPod       = "Pod"
-	WorkloadKindDaemonSet = "DaemonSet"
+	WorkloadKindPod       WorkloadKind = "Pod"
+	WorkloadKindDaemonSet WorkloadKind = "DaemonSet"
 )
 
 // ClientSpec_Workload selects the Kubernetes workload kind that runs frpc.
 type ClientSpec_Workload struct {
-	// +kubebuilder:validation:Enum=Pod;DaemonSet
 	// +kubebuilder:default=Pod
 	// Kind is the workload object created for the FRP client. "Pod" creates a
 	// single bare Pod (default, preserves legacy behavior). "DaemonSet" creates
 	// a DaemonSet that runs one frpc per node matching podTemplate.nodeSelector
 	// / affinity / tolerations.
-	Kind string `json:"kind"`
+	Kind WorkloadKind `json:"kind"`
 }
 
 type ClientSpec_Server struct {

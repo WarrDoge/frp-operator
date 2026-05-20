@@ -1,6 +1,14 @@
 package utils
 
 const CLIENT_TEMPLATE = `
+{{- define "loadBalancer" -}}
+{{ if . }}
+loadBalancer.group = "{{ .Group }}"
+{{ if .GroupKey }}
+loadBalancer.groupKey = "{{ .GroupKey }}"
+{{ end }}
+{{ end }}
+{{- end -}}
 # frpc.toml
 serverAddr = "{{ .Common.ServerAddress }}"
 serverPort = {{ .Common.ServerPort }}
@@ -157,12 +165,7 @@ transport.proxyURL = "{{ $upstream.TCP.Transport.ProxyURL }}"
 {{ end }}
 {{ end }}
 
-{{ if $upstream.TCP.LoadBalancer }}
-loadBalancer.group = "{{ $upstream.TCP.LoadBalancer.Group }}"
-{{ if $upstream.TCP.LoadBalancer.GroupKey }}
-loadBalancer.groupKey = "{{ $upstream.TCP.LoadBalancer.GroupKey }}"
-{{ end }}
-{{ end }}
+{{ template "loadBalancer" $upstream.TCP.LoadBalancer }}
 {{ end }}
 
 {{ if eq $upstream.Type 2 }}
@@ -309,6 +312,8 @@ transport.bandwidthLimitMode = "client"
 transport.proxyURL = "{{ $upstream.HTTP.Transport.ProxyURL }}"
 {{ end }}
 {{ end }}
+
+{{ template "loadBalancer" $upstream.HTTP.LoadBalancer }}
 {{ end }}
 
 {{ if eq $upstream.Type 6 }}
@@ -338,6 +343,8 @@ transport.bandwidthLimitMode = "client"
 transport.proxyURL = "{{ $upstream.HTTPS.Transport.ProxyURL }}"
 {{ end }}
 {{ end }}
+
+{{ template "loadBalancer" $upstream.HTTPS.LoadBalancer }}
 {{ end }}
 
 {{ if eq $upstream.Type 7 }}
@@ -355,6 +362,8 @@ customDomains = [{{ range $i, $d := $upstream.TCPMUX.CustomDomains }}{{ if $i }}
 transport.useEncryption = {{ $upstream.TCPMUX.Transport.UseEncryption }}
 transport.useCompression = {{ $upstream.TCPMUX.Transport.UseCompression }}
 {{ end }}
+
+{{ template "loadBalancer" $upstream.TCPMUX.LoadBalancer }}
 {{ end }}
 
 {{ end }}
